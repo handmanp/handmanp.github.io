@@ -1,6 +1,6 @@
 // ---- use socket.io ----
 "use strict";
-let port = 443;
+let port = 7001;
 let socket = io.connect('https://handmanp.ddns.net:' + port);
 let room = getRoomname();
 let joiningRoom;
