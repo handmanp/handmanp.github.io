@@ -4,6 +4,7 @@ let port = 7001;
 <<<<<<< HEAD
 
 let socket = io.connect('https://handmanp.ddns.net:' + port, { secure: true });
+=======
 let socket = io.connect('https://handmanp.ddns.net:' + port);
 let room = getRoomname();
 let joiningRoom;
