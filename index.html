@@ -3,7 +3,7 @@
 <html>
 <head>
 	<title>original</title>
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
 	<script type="text/javascript" src="/script/rtc.js"></script>
 	<script type="text/javascript" src="/script/connection.js"></script>
 	<script type="text/javascript" src="/script/jsSHA/sha.js"></script>
@@ -15,33 +15,35 @@
 		border: 1px solid #000;
 		margin: 10px 5px 0 0;
 	}
+	#sendElement {
+		visibility: hidden;
+	}
 </style>
 
 <body>
 <strong>socket.io Signaling for Multi-party</strong><br><br>
-<a href="http://localhost:8000/socket.html">TOP</a><br>
+<a href="http://localhost:8000">TOP</a><br>
 <ul id="peerList">
 </ul><br>
 
+<div id="imgList"></div>
 
-<button onclick="connect();" id="btnConnect">接続</button><br/>
-<button onclick="hangUp();" id="btnHangup">切断</button><br/>
-
-
-<a href="https://w3c.github.io/webrtc-pc/#peer-to-peer-data-example">参考</a><br>
+<a href="http://w3c.github.io/webrtc-pc/#peer-to-peer-data-example">参考</a><br>
 
 
+<div id="join">
+	<input type="text" placeholder="roomname" name="roomname" id="roomname">
+	<button id="createRoom">作成</button><br>
+</div>
+<div id="sendElement">
+	<button id="sendMessage">送信</button><br><br>
+	Select Send Files
+	<input type="file" id="files" name="files[]" multiple />
+</div>
 
-<input type="text" placeholder="roomname" name="roomname" id="roomname">
-<button id="createRoom">作成</button><br>
-
-
-<input type="file" id="files" name="files[]" multiple />
-<output id="list"></output>
-
-<button id="sendMessage">送信</button><br><br>
-
-<output id="authImages"></output>
+<div id="authImages">
+	Image
+</div>
 
 <script type="text/javascript">
 	function handleFileSelect(evt) {
@@ -64,7 +66,7 @@
 					var span = document.createElement('span');
 					span.innerHTML = ['<img class="thumb" src="', e.target.result,
 					                  '" title="', escape(theFile.name), '"/>'].join('');
-					document.getElementById('list').insertBefore(span, null);
+					document.getElementById('imgList').insertBefore(span, null);
 				};
 			})(f);
 
@@ -94,14 +96,6 @@
 
 
 <script type="text/javascript">
-	/*
-	const configuration = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
-	var signaling = new WebSocket('ws://localhost:7001');
-	let pc;			// RTCPeerConnection
-	let channel;
-	*/
-
-
 
 	window.onload = () => {
 		document.getElementById('sendMessage').addEventListener("click", () => {
@@ -118,6 +112,7 @@
 						dataChannelSend(id, img);
 					}
 				}
+				document.getElementById('files').value = null;
 			}
 		});
 

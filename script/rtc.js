@@ -64,7 +64,7 @@
 				var span = document.createElement('span');
 					span.innerHTML = ['<img class="thumb" src="', evt.data,
 					                  '" title="', escape('image'), '"/>'].join('');
-				document.getElementById('list').insertBefore(span, null);
+				document.getElementById('imgList').insertBefore(span, null);
 			}
 
 			dataChannel.onerror = (evt) => {

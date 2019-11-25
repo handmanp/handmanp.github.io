@@ -1,8 +1,7 @@
 // ---- use socket.io ----
 "use strict";
 let port = 7001;
-let socket = io.connect('https://handmanp.ddns.net:' + port, { secure: true });
-
+let socket = io.connect('http://localhost:' + port);
 let room = getRoomname();
 let joiningRoom;
 let ids = {};
@@ -71,7 +70,18 @@ socket.on('auth question', function(message) {
 	
 });
 
-socket.on('join', function(message) {
+socket.on('join', function(message, child) {
+	var peerList = document.getElementById('peerList');
+	peerList.style.display = "none";
+	if (child) {
+		var authImages = document.getElementById('authImages');
+		authImages.style.visibility = "hidden";
+	}
+	else {
+		var sendElement = document.getElementById('sendElement');
+		sendElement.style.visibility = "visible";
+	}
+
 	console.log(message);
 	connect();
 });
