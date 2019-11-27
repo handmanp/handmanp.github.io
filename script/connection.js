@@ -1,7 +1,15 @@
+/// ======================
+/// connection.js
+/// ======================
+
 // ---- use socket.io ----
 "use strict";
 let port = 7001;
-let socket = io.connect('https://handmanp.ddns.net:' + port);
+let dns = {
+	global: "https://handmanp.ddns.net",
+	local: "localhost"
+};
+let socket = io.connect(dns.local + ':' + port);
 let room = getRoomname();
 let joiningRoom;
 let ids = {};
@@ -38,6 +46,7 @@ function selectImage(elementId) {
 }
 
 socket.on('connect', function(evt) {
+	getPosition();
 	console.log('id:', socket.id);
 	console.log('socket.io connected. enter room=' + room);
 	console.log('connections:' + getConnectionCount());
