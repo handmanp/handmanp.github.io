@@ -9,7 +9,7 @@ let dns = {
 	global: "https://handmanp.ddns.net",
 	local: "localhost"
 };
-let socket = io.connect(dns.local + ':' + port);
+let socket = io.connect(dns.global + ':' + port);
 let room = getRoomname();
 let joiningRoom;
 let ids = {};
