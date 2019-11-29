@@ -56,29 +56,31 @@ function addConnection(id, peer) {
 	//channel[id] = setDataChannel(peer);
 
 	peer.ondatachannel = function(evt) {
-	console.log('ondatachannel with' + id, evt);
-	let dataChannel = evt.channel;
+		console.log('ondatachannel with' + id, evt);
+		let dataChannel = evt.channel;
 
-	dataChannel.onopen = (evt) => {
-		console.log('DataChannel onopen', evt);
-	}
+		dataChannel.onopen = (evt) => {
+			console.log('DataChannel onopen', evt);
+		}
 
-	dataChannel.onmessage = (evt) => {
-		console.log('DataChannel onmessage:', evt);
-		var span = document.createElement('span');
-		span.innerHTML = ['<img class="thumb" src="', evt.data,
-		                  '" title="', escape('image'), '"/>'].join('');
-		document.getElementById('imgList').insertBefore(span, null);
-	}
+		dataChannel.onmessage = (evt) => {
+			var data = JSON.parse(evt.data);
 
-	dataChannel.onerror = (evt) => {
-		console.log('DataChannel onerror', evt);
-	}
-	console.log('ondatachannel with ' + id, evt);
+			console.log('DataChannel onmessage:', data);
 
-	channel[id] = dataChannel;
+			dataChannelReceive(data.recData, data.size, data.hash);
 
-	console.log('channel ' + id + ':', channel[id]);
+		}
+
+		dataChannel.onerror = (evt) => {
+			console.log('DataChannel onerror', evt);
+		}
+
+		console.log('ondatachannel with ' + id, evt);
+
+		channel[id] = dataChannel;
+
+		console.log('channel ' + id + ':', channel[id]);
 
 	};
 
@@ -108,7 +110,7 @@ function stopConnection(id) {
 
 function stopAllConnection() {
 	for (let id in peerConnections) {
-	stopConnection(id);
+		stopConnection(id);
 	}
 }
 
@@ -150,79 +152,97 @@ function prepareNewConnection(id) {
 	// Bind peerconnection to Remote Datachannel
 	peer.ondatachannel = function(evt) {
 
-	let dataChannel = evt.channel;
+		let dataChannel = evt.channel;
 
-	dataChannel.onopen = (evt) => {
-		console.log('DataChannel onopen', evt);
-	}
+		dataChannel.onopen = (evt) => {
+			console.log('DataChannel onopen', evt);
+		}
 
-	dataChannel.onmessage = (evt) => {
-		console.log('DataChannel onmessage:', evt);
-		var span = document.createElement('span');
-		span.innerHTML = ['<img class="thumb" src="', evt.data,
-		                  '" title="', escape('image'), '"/>'].join('');
-		document.getElementById('list').insertBefore(span, null);
-	}
+		dataChannel.onmessage = (evt) => {
+			console.log('DataChannel onmessage:', evt);
+			var data = evt.data;
+			var byteString = atob(data.split(",")[1]);
 
-	dataChannel.onerror = (evt) => {
-		console.log('DataChannel onerror', evt);
-	}
-	console.log('ondatachannel with ' + id, evt);
-	channel[id] = dataChannel;
+			var mimeType = data.match(/(:)([a-z\/]+)(;)/)[2];
 
-	console.log('channel ' + id + ':', channel[id]);
+			for(var i=0, l=byteString.length, content=new Uint8Array(l); l>i; i++) {
+				content[i] = byteString.charCodeAt(i);
+			}
+
+			var blob = new Blob([content], {type: mimeType,});
+			var objUrl = URL.createObjectURL(blob);
+
+			console.log('evt:', evt.data);
+			console.log('obj:', objUrl);
+
+			var span = document.createElement('span');
+			span.innerHTML = ['<img class="thumb" src="', objUrl,
+			                  '" title="', escape('image'), '"/>'].join('');
+			document.getElementById('list').insertBefore(span, null);
+
+		}
+
+		dataChannel.onerror = (evt) => {
+			console.log('DataChannel onerror', evt);
+		}
+
+		console.log('ondatachannel with ' + id, evt);
+		channel[id] = dataChannel;
+
+		console.log('channel ' + id + ':', channel[id]);
 	}
 
 	peer.onicecandidate = function(evt) {
-	if (evt.candidate) {
-		console.log(evt.candidate);
+		if (evt.candidate) {
+			console.log(evt.candidate);
 
-		sendIceCandidate(id, evt.candidate);
-	}
-	else {
-		console.log('empty ice event');
-	}
+			sendIceCandidate(id, evt.candidate);
+		}
+		else {
+			console.log('empty ice event');
+		}
 	};
 
 	peer.negotiationneeded = function(evt) {
-	console.log('-- onnegotiationneeded --');
+		console.log('-- onnegotiationneeded --');
 	};
 
 	peer.onsignalingstatechange = function() {
-	console.log('== signaling status=' + peer.signalingState);
+		console.log('== signaling status=' + peer.signalingState);
 	};
 
 	peer.oniceconnectionstatechange = function() {
-	console.log('== ice connection status=' + peer.iceConnectionState);
-	if (peer.iceConnectionState === 'disconnected') {
-		console.log('-- disconnected --');
-		//hangUp();
-		stopConnection(id);
-	}
+		console.log('== ice connection status=' + peer.iceConnectionState);
+		if (peer.iceConnectionState === 'disconnected') {
+			console.log('-- disconnected --');
+			//hangUp();
+			stopConnection(id);
+		}
 	};
 
 	peer.onicegatheringstatechange = function() {
-	console.log('==***== ice gathering state=' + peer.iceGatheringState);
+		console.log('==***== ice gathering state=' + peer.iceGatheringState);
 	};
 	
 	peer.onconnectionstatechange = function() {
-	console.log('==***== connection state=' + peer.connectionState);
+		console.log('==***== connection state=' + peer.connectionState);
+		if (peer.connectionState === 'failed') { connect(); }
 	};
 
 	peer.onremovestream = function(event) {
-	console.log('-- peer.onremovestream()');
-	//pauseVideo(remoteVideo);
-	deleteRemoteStream(id);
-	detachVideo(id);
+		console.log('-- peer.onremovestream()');
+		//pauseVideo(remoteVideo);
+		deleteRemoteStream(id);
+		detachVideo(id);
 	};
 
 	// -- add local stream --
 	if (localStream) {
-	console.log('Adding local stream...');
-	peer.addStream(localStream);
+		console.log('Adding local stream...');
+		peer.addStream(localStream);
 	}
 	else {
-	console.warn('no local stream, but continue.');
+		console.warn('no local stream, but continue.');
 	}
 
 	return peer;

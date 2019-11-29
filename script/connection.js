@@ -2,28 +2,93 @@
 /// connection.js
 /// ======================
 
-// ---- use socket.io ----
+// Connection Param
 "use strict";
 let port = 7001;
 let dns = {
 	global: "https://handmanp.ddns.net",
-	local: "localhost"
+	local: "https://localhost"
 };
-let socket = io.connect(dns.local + ':' + port);
+let socket = io.connect(dns.global + ':' + port);
 let room = getRoomname();
 let joiningRoom;
 let ids = {};
 
+// Img Param
+let imgTemp = {};
+
 function dataChannelSend(id, file) {
 	let reader = new FileReader();
-	let result;
-	reader.readAsDataURL(file);
-	reader.onload = () => {
-		//channel[id].send(reader.result);
-		console.log(URL.createObjectURL(file));
-		channel[id].send(URL.createObjectURL(file));
-		console.log('onload');
+
+	reader.onloadend = () => {
+		var data = reader.result;
+		var size = data.length;
+
+		// hash of img
+		var hashObject = new jsSHA('SHA-256', 'TEXT');
+		hashObject.update(reader.result);
+		var hash = hashObject.getHash("HEX");
+
+		const CHUNK_SIZE = 63000;
+		const CHUNK = Math.floor(size / CHUNK_SIZE) + 1;
+		console.log('Size is:', size);
+		console.log('Loop Number is:', CHUNK);
+
+		for(var i = 0; i < CHUNK; i++) {
+			var dataFragment = data.slice(i * CHUNK_SIZE, (i * CHUNK_SIZE) + CHUNK_SIZE);
+
+			var elem = {
+				recData: dataFragment,
+				size: size,
+				hash: hash
+			};
+			console.log('dataFragment:', elem);
+			channel[id].send(JSON.stringify(elem));
+		}
+		console.log('onload', elem);
 	};
+
+	reader.readAsDataURL(file);
+	
+}
+
+function dataChannelReceive(recData, size, hash) {
+
+	console.log("recData:", recData);
+	console.log("size:", size);
+	console.log("hash:", hash)
+	// new data
+	if (!imgTemp[hash]) {
+		imgTemp[hash] = recData;
+	}
+	else {
+		imgTemp[hash] += recData;
+	}
+	console.log("chunk:", imgTemp[hash]);
+	if (imgTemp[hash].length == size) {
+		var data = imgTemp[hash];
+		var byteString = atob(data.split(",")[1]);
+
+		var mimeType = data.match(/(:)([a-z\/]+)(;)/)[2];
+
+		for(var i=0, l=byteString.length, content=new Uint8Array(l); l>i; i++) {
+			content[i] = byteString.charCodeAt(i);
+		}
+
+		var blob = new Blob([content], {type: mimeType,});
+		var objUrl = URL.createObjectURL(blob);
+
+		console.log('evt:', recData);
+		console.log('obj:', objUrl);
+
+		var span = document.createElement('span');
+		span.innerHTML = ['<img class="thumb" src="', objUrl,
+        	          '" title="', escape('image'), '"/>'].join('');
+		document.getElementById('imgList').insertBefore(span, null);
+
+		delete imgTemp[hash];
+	}
+
 }
 
 function createRoom(roomname) {
