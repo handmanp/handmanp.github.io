@@ -6,7 +6,7 @@ let userLocation;
 
 function getPosition() {
 	if (navigator.geolocation) {
-		console.log("Geolocation API is supported.");
+		console.info("Geolocation API is supported.");
 
 		navigator.geolocation.getCurrentPosition(
 			function(location) {

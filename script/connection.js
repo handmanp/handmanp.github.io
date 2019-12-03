@@ -9,13 +9,15 @@ let dns = {
 	global: "https://handmanp.ddns.net",
 	local: "https://localhost"
 };
+let ids = {};
 let socket = io.connect(dns.global + ':' + port);
 let room = getRoomname();
 let joiningRoom;
-let ids = {};
 
-// Img Param
+// Data Transfer Param
 let imgTemp = {};
+const CHUNK_SIZE = 120000; // slice per 63KB
+
 
 function dataChannelSend(id, file) {
 	let reader = new FileReader();
@@ -29,12 +31,13 @@ function dataChannelSend(id, file) {
 		hashObject.update(reader.result);
 		var hash = hashObject.getHash("HEX");
 
-		const CHUNK_SIZE = 63000;
-		const CHUNK = Math.floor(size / CHUNK_SIZE) + 1;
+		// 
+		const chunkNumber = Math.floor(size / CHUNK_SIZE) + 1;
 		console.log('Size is:', size);
-		console.log('Loop Number is:', CHUNK);
-
-		for(var i = 0; i < CHUNK; i++) {
+		console.log('Chunk Number is:', chunkNumber);
+		console.log('Send to ' + id);
+		for(var i = 0; i < chunkNumber; i++) {
+			console.log('Chunk ' + (i+1) + '/' + chunkNumber);
 			var dataFragment = data.slice(i * CHUNK_SIZE, (i * CHUNK_SIZE) + CHUNK_SIZE);
 
 			var elem = {
@@ -42,10 +45,12 @@ function dataChannelSend(id, file) {
 				size: size,
 				hash: hash
 			};
-			console.log('dataFragment:', elem);
+
+			// console.log('dataFragment:', elem);
+
+			// send data-chunk
 			channel[id].send(JSON.stringify(elem));
 		}
-		console.log('onload', elem);
 	};
 
 	reader.readAsDataURL(file);
@@ -54,17 +59,18 @@ function dataChannelSend(id, file) {
 
 function dataChannelReceive(recData, size, hash) {
 
-	console.log("recData:", recData);
-	console.log("size:", size);
-	console.log("hash:", hash)
-	// new data
+	// Store received img chunks -> imgTemp{}
 	if (!imgTemp[hash]) {
+		console.log("size:", size);
+		console.log("hash:", hash)
 		imgTemp[hash] = recData;
 	}
 	else {
 		imgTemp[hash] += recData;
 	}
-	console.log("chunk:", imgTemp[hash]);
+
+	console.log('Received: ' + imgTemp[hash].length + '/' + size);
+
 	if (imgTemp[hash].length == size) {
 		var data = imgTemp[hash];
 		var byteString = atob(data.split(",")[1]);
@@ -75,11 +81,12 @@ function dataChannelReceive(recData, size, hash) {
 			content[i] = byteString.charCodeAt(i);
 		}
 
+		// Create ObjectURL from DataURI
 		var blob = new Blob([content], {type: mimeType,});
 		var objUrl = URL.createObjectURL(blob);
 
-		console.log('evt:', recData);
-		console.log('obj:', objUrl);
+		// console.log('recData:', recData.slice(0, 20) + '...');
+		// console.log('obj:', objUrl);
 
 		var span = document.createElement('span');
 		span.innerHTML = ['<img class="thumb" src="', objUrl,
@@ -110,6 +117,11 @@ function selectImage(elementId) {
 	socket.emit('auth answer', joiningRoom, hash);
 }
 
+function kickMember(id) {
+	var kick = window.confirm(id + 'を退場させます');
+	if (kick) {	socket.emit('kick', id); }
+}
+
 socket.on('connect', function(evt) {
 	getPosition();
 	console.log('id:', socket.id);
@@ -122,7 +134,8 @@ socket.on('create room status', function(isExisted, roomname, ansImg) {
 	if (!isExisted) {
 		var span = document.createElement('span');
 					span.innerHTML = ['<img class="thumb" src="', ansImg,
-					                  '" title="answer image"/>'].join('');
+					                  '" title="answer image"/>',
+					                  '<== 正解画像'].join('');
 					document.getElementById('authImages').insertBefore(span, null);
 	}
 });
@@ -149,13 +162,16 @@ socket.on('join', function(message, child) {
 	peerList.style.display = "none";
 	if (child) {
 		var authImages = document.getElementById('authImages');
-		authImages.style.visibility = "hidden";
+		authImages.style.display = "none";
 	}
 	else {
 		var sendElement = document.getElementById('sendElement');
-		sendElement.style.visibility = "visible";
+		var memberlist = document.getElementById('member');
+		sendElement.style.display = "inline";
+		memberlist.style.display = "block";
+		pickerEnableEvents();
 	}
-
+	document.getElementById('yourroom').innerHTML = "You're in <strong>" + escape(message) + "</strong>";
 	console.log(message);
 	connect();
 });
@@ -217,6 +233,11 @@ socket.on('user disconnected', function(evt) {
 	}
 });
 
+socket.on('leave', function(evt) {
+	console.log('Disconnected. Reason:', evt);
+	location.reload();
+});
+
 // --- broadcast message to all members in room
 function emitRoom(msg) {
 	socket.emit('message', msg);
@@ -228,7 +249,6 @@ function emitTo(id, msg) {
 
 }
 
-// -- Get Roomname --
 function getRoomname() {
 	let url = document.location.href;
 	let args = url.split('?');

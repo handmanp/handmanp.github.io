@@ -16,19 +16,66 @@
 		border: 1px solid #000;
 		margin: 10px 5px 0 0;
 	}
-	#sendElement {
-		visibility: hidden;
+	.sender {
+		display: none;
 	}
+
+
+	#dropzone {
+		background-color: #cfc;
+		border: solid 3px #9c9;
+		color: #9c9;
+		min-height: 50px;
+		padding: 20px;
+		text-shadow: 1px 1px 0 #fff;
+	}
+	#dropzone.dropover {
+		background-color: #cff;
+		color: #9cc;
+	}
+	
+	#selectedfiles:empty::before {
+		color: #ccc;
+		content: "(Files data will be shown here.)";
+	}
+	#selectedfiles img {
+		border: solid 1px #ccc;
+		cursor: pointer;
+		height: auto;
+		margin: 0 10px;
+		max-height: 128px;
+		max-width: 128px;
+		width: auto;
+	}
+
+	#authImages img {
+		width: 100px;
+		height: 100px;
+		object-fit: cover; /* この一行を追加するだけ！ */
+}
 </style>
 
 <body>
 <strong>socket.io Signaling for Multi-party</strong><br><br>
+<div>
+	<a id="yourid"></a><br>
+	<a id="yourroom"></a>
+</div>
 <a href="https://localhost">TOP(Localhost)</a><br>
 <a href="https://handmanp.ddns.net">TOP(DDNS)</a><br>
-<ul id="peerList">
-</ul><br>
+<div id="authImages"></div><br>
+<ul class="sender" id="member"></ul>
+<div class="sender" id="sendElement">
+	<button id="sendMessage">送信</button><br><br>
+	Select Send Files
+	<div id="dropzone" effectAllowed="move">Drag Files Here</div>
+</div>
 
-<div id="imgList"></div>
+<ul id="peerList"></ul><br>
+
+<div id="imgList">
+	<ul id="selectedfiles"></ul>
+</div>
 
 <a href="http://w3c.github.io/webrtc-pc/#peer-to-peer-data-example">参考</a><br>
 
@@ -37,19 +84,11 @@
 	<input type="text" placeholder="roomname" name="roomname" id="roomname">
 	<button id="createRoom">作成</button><br>
 </div>
-<div id="sendElement">
-	<button id="sendMessage">送信</button><br><br>
-	Select Send Files
-	<input type="file" id="files" name="files[]" accept="image/*,.png,.jpg,.jpeg,.gif" multiple />
-</div>
 
-<div id="authImages">
-	Image
-</div>
-
+<script type="text/javascript" src="/script/picker.js"></script>
 <script type="text/javascript">
 	function handleFileSelect(evt) {
-		var files = evt.target.files; // FileList object
+		var files = evt; // FileList object
 
 		// Loop through the FileList and render image files as thumbnails.
 		for (var i = 0, f; f = files[i]; i++) {
@@ -79,7 +118,6 @@
 
 	function refreshList(message) {
 		var pl = document.getElementById('peerList');
-		var list = document.getElementById('list');
 		var count = 0;
 		ids = message.room;
 		console.log('Event id:', ids);
@@ -91,30 +129,52 @@
 			li.setAttribute('id', 'list');
 			pl.appendChild(li);
 		}
+		console.log('leader:', message);
+
+		if (message.leader) {
+			// leader
+			if (message.leader[socket.id]) {
+				console.log("You're Leader");
+				var ml = document.getElementById('member');
+				var count = 0;
+				ml.textContent = null;
+				for (id in message.room) {
+					if (message.room[id] !== message.room[socket.id] ||
+						id === socket.id) continue;
+
+					var li = document.createElement('li');
+					//li.innerHTML = "<a href='javascript:void(0)' onclick='auth(\"" + message.room[id] + "\")'>" + message.room[id] + "</a>";
+					li.innerHTML = "<a href='javascript:void(0)' onclick='kickMember(\"" + id + "\")'>" + id.slice(0,8) + '...' + "</a>";
+					ml.appendChild(li);
+				}
+			}
+		}
+		document.getElementById('yourid').innerHTML = "Your ID: <strong>" + socket.id + "</strong>";
+		document.getElementById('yourroom').innerHTML = "You're in <strong>" + escape(ids[socket.id]) + "</strong>";
+
 	}
 
-	document.getElementById('files').addEventListener('change', handleFileSelect, false);
 </script>
 
 
 <script type="text/javascript">
 
 	window.onload = () => {
+
 		document.getElementById('sendMessage').addEventListener("click", () => {
-			var files = document.getElementById('files');
-			if (!files.value) {
+			if (!files) {
 				console.log('No file selected');
 			}
 			else {
-				for (var i = 0; i < files.files.length; i++) {
-					var img = files.files[i];
+				for (var i = 0; i < files.length; i++) {
+					var img = files[i];
 					console.log('PC:', peerConnections);
 					for (let id in peerConnections) {
 						console.log('id', id);
 						dataChannelSend(id, img);
 					}
 				}
-				document.getElementById('files').value = null;
+				files = null;
 			}
 		});
 

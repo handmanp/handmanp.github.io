@@ -66,7 +66,7 @@ function addConnection(id, peer) {
 		dataChannel.onmessage = (evt) => {
 			var data = JSON.parse(evt.data);
 
-			console.log('DataChannel onmessage:', data);
+			// console.log('DataChannel onmessage:', data);
 
 			dataChannelReceive(data.recData, data.size, data.hash);
 
@@ -97,14 +97,14 @@ function getConnection(id) {
 function deleteConnection(id) {
 	_assert('deleteConnection() peer must exist', peerConnections[id]);
 	delete peerConnections[id];
+	delete channel[id];
 }
 
 function stopConnection(id) {
-	detachVideo(id);
 	if (isConnectedWith(id)) {
-	let peer = getConnection(id);
-	peer.close();
-	deleteConnection(id);
+		let peer = getConnection(id);
+		peer.close();
+		deleteConnection(id);
 	}
 }
 
@@ -135,10 +135,10 @@ function sendIceCandidate(id, candidate) {
 	//console.log('sending candidate=' + message);
 	//ws.send(message);
 	if (isConnectedWith(id)) {
-	emitTo(id, obj);
+		emitTo(id, obj);
 	}
 	else {
-	console.warn('connection NOT EXIST or ALREADY CLOSED. so skip candidate')
+		console.warn('connection NOT EXIST or ALREADY CLOSED. so skip candidate')
 	}
 }
 
@@ -153,7 +153,7 @@ function prepareNewConnection(id) {
 	peer.ondatachannel = function(evt) {
 
 		let dataChannel = evt.channel;
-
+		/*
 		dataChannel.onopen = (evt) => {
 			console.log('DataChannel onopen', evt);
 		}
@@ -185,10 +185,10 @@ function prepareNewConnection(id) {
 		dataChannel.onerror = (evt) => {
 			console.log('DataChannel onerror', evt);
 		}
-
+		*/
 		console.log('ondatachannel with ' + id, evt);
 		channel[id] = dataChannel;
-
+		
 		console.log('channel ' + id + ':', channel[id]);
 	}
 
@@ -255,15 +255,15 @@ function makeOffer(id) {
 	channel[id] = setDataChannel(peerConnection);
 	peerConnection.createOffer()
 	.then(function (sessionDescription) {
-	console.log('makeOffer() succsess in promise');
-	return peerConnection.setLocalDescription(sessionDescription);
+		console.log('makeOffer() succsess in promise');
+		return peerConnection.setLocalDescription(sessionDescription);
 	}).then(function() {
-	console.log('setLocalDescription() succsess in promise');
-	// -- Trickle ICE の場合は、初期SDPを相手に送る -- 
-	sendSdp(id, peerConnection.localDescription);
-	// -- Vanilla ICE の場合には、まだSDPは送らない --
+		console.log('setLocalDescription() succsess in promise');
+		// -- Trickle ICE の場合は、初期SDPを相手に送る -- 
+		sendSdp(id, peerConnection.localDescription);
+		// -- Vanilla ICE の場合には、まだSDPは送らない --
 	}).catch(function(err) {
-	console.error(err);
+		console.error(err);
 	});
 }
 
@@ -274,10 +274,10 @@ function setOffer(id, sessionDescription) {
 
 	peerConnection.setRemoteDescription(sessionDescription)
 	.then(function() {
-	console.log('setRemoteDescription(offer) succsess in promise');
-	makeAnswer(id);
+		console.log('setRemoteDescription(offer) succsess in promise');
+		makeAnswer(id);
 	}).catch(function(err) {
-	console.error('setRemoteDescription(offer) ERROR: ', err);
+		console.error('setRemoteDescription(offer) ERROR: ', err);
 	});
 }
 
@@ -285,51 +285,51 @@ function makeAnswer(id) {
 	console.log('sending Answer. Creating remote session description...' );
 	let peerConnection = getConnection(id);
 	if (! peerConnection) {
-	console.error('peerConnection NOT exist!');
-	return;
+		console.error('peerConnection NOT exist!');
+		return;
 	}
 	
 	peerConnection.createAnswer()
 	.then(function (sessionDescription) {
-	console.log('createAnswer() succsess in promise');
-	return peerConnection.setLocalDescription(sessionDescription);
+		console.log('createAnswer() succsess in promise');
+		return peerConnection.setLocalDescription(sessionDescription);
 	}).then(function() {
-	console.log('setLocalDescription() succsess in promise');
-	// -- Trickle ICE の場合は、初期SDPを相手に送る -- 
-	sendSdp(id, peerConnection.localDescription);
-	// -- Vanilla ICE の場合には、まだSDPは送らない --
+		console.log('setLocalDescription() succsess in promise');
+		// -- Trickle ICE の場合は、初期SDPを相手に送る -- 
+		sendSdp(id, peerConnection.localDescription);
+		// -- Vanilla ICE の場合には、まだSDPは送らない --
 	}).catch(function(err) {
-	console.error(err);
+		console.error(err);
 	});
 }
 function setAnswer(id, sessionDescription) {
 	let peerConnection = getConnection(id);
 	if (! peerConnection) {
-	console.error('peerConnection NOT exist!');
-	return;
+		console.error('peerConnection NOT exist!');
+		return;
 	}
 	peerConnection.setRemoteDescription(sessionDescription)
 	.then(function() {
-	console.log('setRemoteDescription(answer) succsess in promise');
+		console.log('setRemoteDescription(answer) succsess in promise');
 	}).catch(function(err) {
-	console.error('setRemoteDescription(answer) ERROR: ', err);
+		console.error('setRemoteDescription(answer) ERROR: ', err);
 	});
 
 }
 // --- tricke ICE ---
 function addIceCandidate(id, candidate) {
 	if (! isConnectedWith(id)) {
-	console.warn('NOT CONNEDTED or ALREADY CLOSED with id=' + id + ', so ignore candidate');
-	return;
+		console.warn('NOT CONNEDTED or ALREADY CLOSED with id=' + id + ', so ignore candidate');
+		return;
 	}
 	
 	let peerConnection = getConnection(id);
 	if (peerConnection) {
-	peerConnection.addIceCandidate(candidate);
+		peerConnection.addIceCandidate(candidate);
 	}
 	else {
-	console.error('PeerConnection not exist!');
-	return;
+		console.error('PeerConnection not exist!');
+		return;
 	}
 }
 
@@ -337,19 +337,20 @@ function setDataChannel(peer) {
 	let dataChannel = peer.createDataChannel("chat");
 	
 	dataChannel.onopen = (evt) => {
-	console.log('DataChannel onopen', evt);
+		console.log('DataChannel onopen', evt);
 	}
 
 	dataChannel.onmessage = (evt) => {
-	console.log('DataChannel onmessage:', evt);
-	var span = document.createElement('span');
+		console.log('DataChannel onmessage:', evt);
+		var span = document.createElement('span');
 		span.innerHTML = ['<img class="thumb" src="', evt.data,
-		                  '" title="', escape('image'), '"/>'].join('');
-	document.getElementById('list').insertBefore(span, null);
+			                  '" title="', escape('image'), '"/>'].join('');
+		document.getElementById('list').insertBefore(span, null);
 	}
 
 	dataChannel.onerror = (evt) => {
-	console.log('DataChannel onerror', evt);
+		console.log('DataChannel onerror', evt);
 	}
+
 	return dataChannel;
 }
