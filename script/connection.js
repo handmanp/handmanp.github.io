@@ -16,7 +16,7 @@ let joiningRoom;
 
 // Data Transfer Param
 let imgTemp = {};
-const CHUNK_SIZE = 120000; // slice per 63KB
+const CHUNK_SIZE = 16000; // slice per 16KB
 
 
 function dataChannelSend(id, file) {
