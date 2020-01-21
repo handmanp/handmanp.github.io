@@ -13,6 +13,7 @@ let ids = {};
 let socket = io.connect(dns.global + ':' + port);
 let room = getRoomname();
 let joiningRoom;
+let imgNum;
 
 // Data Transfer Param
 let imgTemp = {};
@@ -104,6 +105,7 @@ function createRoom(roomname) {
 
 function auth(roomname) {
 	joiningRoom = roomname;
+	imgNum = 0;
 	console.log('Auth offer sent', roomname);
 	socket.emit('auth offer', roomname);
 }

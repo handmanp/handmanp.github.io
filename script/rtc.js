@@ -54,8 +54,8 @@ function addConnection(id, peer) {
 	// データチャネルを生成
 	console.log('set datachannel:' + id, peer);
 	//channel[id] = setDataChannel(peer);
-
-	peer.ondatachannel = function(evt) {
+	var pc = peer;
+	pc.ondatachannel = function(evt) {
 		console.log('ondatachannel with' + id, evt);
 		let dataChannel = evt.channel;
 
@@ -84,7 +84,7 @@ function addConnection(id, peer) {
 
 	};
 
-	peerConnections[id] = peer;
+	peerConnections[id] = pc;
 
 }
 
