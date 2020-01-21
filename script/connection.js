@@ -15,6 +15,9 @@ let room = getRoomname();
 let joiningRoom;
 let imgNum;
 
+var startTime;
+var endTime;
+
 // Data Transfer Param
 let imgTemp = {};
 const CHUNK_SIZE = 16000; // slice per 16KB
@@ -32,13 +35,13 @@ function dataChannelSend(id, file) {
 		hashObject.update(reader.result);
 		var hash = hashObject.getHash("HEX");
 
-		// 
+		// start
 		const chunkNumber = Math.floor(size / CHUNK_SIZE) + 1;
 		console.log('Size is:', size);
 		console.log('Chunk Number is:', chunkNumber);
 		console.log('Send to ' + id);
 		for(var i = 0; i < chunkNumber; i++) {
-			console.log('Chunk ' + (i+1) + '/' + chunkNumber);
+			// console.log('Chunk ' + (i+1) + '/' + chunkNumber);
 			var dataFragment = data.slice(i * CHUNK_SIZE, (i * CHUNK_SIZE) + CHUNK_SIZE);
 
 			var elem = {
@@ -59,18 +62,21 @@ function dataChannelSend(id, file) {
 }
 
 function dataChannelReceive(recData, size, hash) {
-
 	// Store received img chunks -> imgTemp{}
 	if (!imgTemp[hash]) {
+
+		console.time('time');
+		startTime = new Date();
+
 		console.log("size:", size);
-		console.log("hash:", hash)
+		console.log("hash:", hash);
 		imgTemp[hash] = recData;
 	}
 	else {
 		imgTemp[hash] += recData;
 	}
 
-	console.log('Received: ' + imgTemp[hash].length + '/' + size);
+	// console.log('Received: ' + imgTemp[hash].length + '/' + size);
 
 	if (imgTemp[hash].length == size) {
 		var data = imgTemp[hash];
@@ -93,6 +99,13 @@ function dataChannelReceive(recData, size, hash) {
 		span.innerHTML = ['<img class="thumb" src="', objUrl,
         	          '" title="', escape('image'), '"/>'].join('');
 		document.getElementById('imgList').insertBefore(span, null);
+
+		// time
+		console.log('finished:', hash.slice(0,8));
+		console.timeEnd('time');
+		endTime = new Date();
+		console.log(endTime - startTime);
+		socket.emit('time', { hash: hash, time: endTime - startTime});
 
 		delete imgTemp[hash];
 	}
