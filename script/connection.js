@@ -105,7 +105,7 @@ function dataChannelReceive(recData, size, hash) {
 		console.timeEnd('time');
 		endTime = new Date();
 		console.log(endTime - startTime);
-		socket.emit('time', { hash: hash, time: endTime - startTime});
+		socket.emit('time', { hash: hash, time: endTime - startTime, type: "transfer"});
 
 		delete imgTemp[hash];
 	}
@@ -188,6 +188,12 @@ socket.on('join', function(message, child) {
 	}
 	document.getElementById('yourroom').innerHTML = "You're in <strong>" + escape(message) + "</strong>";
 	console.log(message);
+
+	// Time counter end
+	console.timeEnd('beforeSharing');
+	endTime = new Date();
+	socket.emit('time', { child: child, time: endTime - startTime, type: "beforeSharing"});
+
 	connect();
 });
 

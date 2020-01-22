@@ -3,6 +3,23 @@ var elDrop = document.getElementById('dropzone');
 var elFiles = document.getElementById('selectedfiles');
 var files;
 
+function sendFiles() {
+	if (!files) {
+		console.log('No file selected');
+	}
+	else {
+		for (var i = 0; i < files.length; i++) {
+			var img = files[i];
+			console.log('PC:', peerConnections);
+			for (let id in peerConnections) {
+				console.log('id', id);
+				dataChannelSend(id, img);
+			}
+		}
+		files = null;
+	}
+}
+
 function pickerEnableEvents() {
 	elDrop.addEventListener('dragover', function(event) {
 		event.preventDefault();
@@ -19,12 +36,14 @@ function pickerEnableEvents() {
 		hideDropping();
 		files = event.dataTransfer.files;
 		showFiles(files);
+		sendFiles();
 	});
 
 	elDrop.addEventListener('click', async function(event) {
 		var evt = await showOpenFileDialog();
 			files = evt;
 			showFiles(files);
+			sendFiles();
 	});
 }
 

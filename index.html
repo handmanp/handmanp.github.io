@@ -160,22 +160,12 @@
 <script type="text/javascript">
 
 	window.onload = () => {
+		// Time counter
+		console.time('beforeSharing');
+		startTime = new Date();
 
 		document.getElementById('sendMessage').addEventListener("click", () => {
-			if (!files) {
-				console.log('No file selected');
-			}
-			else {
-				for (var i = 0; i < files.length; i++) {
-					var img = files[i];
-					console.log('PC:', peerConnections);
-					for (let id in peerConnections) {
-						console.log('id', id);
-						dataChannelSend(id, img);
-					}
-				}
-				files = null;
-			}
+			sendFiles();
 		});
 
 		document.getElementById('createRoom').addEventListener("click", () => {
